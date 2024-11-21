@@ -9,7 +9,7 @@ import os
 
 # Function to download the model from Google Drive
 def download_model_from_gdrive(url, output_path):
-   try:
+    try:
         response = requests.get(url)
         response.raise_for_status()  # Raise an error for bad responses
         with open(output_path, 'wb') as file:
