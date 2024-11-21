@@ -7,41 +7,66 @@ from rdkit.Chem import AllChem
 import requests
 import os
 
-# Function to download the model from Google Drive
-def download_model_from_gdrive(url, output_path):
+def download_from_google_drive(file_id, destination):
+    """
+    Download a large file from Google Drive by handling the confirmation token.
+    """
+    url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    session = requests.Session()
+    
+    response = session.get(url, stream=True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = {"confirm": token}
+        response = session.get(url, params=params, stream=True)
+
+    save_response_content(response, destination)
+
+def get_confirm_token(response):
+    """
+    Extract confirmation token from the response cookies.
+    """
+    for key, value in response.cookies.items():
+        if key.startswith("download_warning"):
+            return value
+    return None
+
+def save_response_content(response, destination):
+    """
+    Save the response content to a file.
+    """
+    CHUNK_SIZE = 32768
+    with open(destination, "wb") as f:
+        for chunk in response.iter_content(CHUNK_SIZE):
+            if chunk:  # filter out keep-alive new chunks
+                f.write(chunk)
+
+# Google Drive File ID and destination
+file_id = "1cFh_gt5lsDoZWSAwRuxMeLMRkTtht3xk"
+destination = "DPP4_model.pkl"
+
+# Download the model file if it doesn't exist locally
+if not os.path.exists(destination):
+    st.info("Downloading the model from Google Drive...")
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an error for bad responses
-        with open(output_path, 'wb') as file:
-            file.write(response.content)
-        return output_path
+        download_from_google_drive(file_id, destination)
     except Exception as e:
         st.error(f"Error downloading the model: {e}")
-        return None
 
-# Define model URL and local path
-model_url = "https://drive.google.com/file/d/1cFh_gt5lsDoZWSAwRuxMeLMRkTtht3xk/view?usp=drive_link"
-model_path = "DPP4_model.pkl"
-
-# Download the model
-if not os.path.exists(model_path):
-    st.info("Downloading the model...")
-    downloaded_model_path = download_model_from_gdrive(model_url, model_path)
-else:
-    downloaded_model_path = model_path
-
-# Verify and load the model
-if downloaded_model_path and os.path.exists(downloaded_model_path):
+# Load the model
+if os.path.exists(destination):
     try:
-        with open(downloaded_model_path, 'rb') as file:
+        with open(destination, 'rb') as file:
             model = pickle.load(file)
+        st.success("Model loaded successfully!")
     except pickle.UnpicklingError:
-        st.error("The downloaded file is not a valid pickle file. Please check the Google Drive link.")
+        st.error("The downloaded file is not a valid pickle file.")
     except Exception as e:
         st.error(f"An error occurred while loading the model: {e}")
 else:
-    st.error("Failed to load the model. File may be missing or corrupted.")
-
+    st.error("Failed to download the model. Please check the Google Drive file ID.")
+    
 # Function to generate PubChem-like fingerprints
 def get_fingerprint(smiles):
     mol = Chem.MolFromSmiles(smiles)
