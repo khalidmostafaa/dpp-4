@@ -42,15 +42,16 @@ def save_response_content(response, destination):
             if chunk:  # filter out keep-alive new chunks
                 f.write(chunk)
 
-# Google Drive File ID and destination
+# File ID and destination path
 file_id = "1cFh_gt5lsDoZWSAwRuxMeLMRkTtht3xk"
 destination = "DPP4_model.pkl"
 
-# Download the model file if it doesn't exist locally
+# Download the model if not already present
 if not os.path.exists(destination):
     st.info("Downloading the model from Google Drive...")
     try:
         download_from_google_drive(file_id, destination)
+        st.success("Model downloaded successfully!")
     except Exception as e:
         st.error(f"Error downloading the model: {e}")
 
@@ -61,11 +62,11 @@ if os.path.exists(destination):
             model = pickle.load(file)
         st.success("Model loaded successfully!")
     except pickle.UnpicklingError:
-        st.error("The downloaded file is not a valid pickle file.")
+        st.error("The downloaded file is not a valid pickle file. Double-check the source file.")
     except Exception as e:
         st.error(f"An error occurred while loading the model: {e}")
 else:
-    st.error("Failed to download the model. Please check the Google Drive file ID.")
+    st.error("Failed to download the model. Please check the file ID or link.")
     
 # Function to generate PubChem-like fingerprints
 def get_fingerprint(smiles):
