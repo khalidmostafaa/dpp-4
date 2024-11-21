@@ -4,11 +4,37 @@ import numpy as np
 import pickle
 from rdkit import Chem
 from rdkit.Chem import AllChem
+import requests
+import os
+
+# Function to download the model from Google Drive
+def download_model_from_gdrive(url, output_path):
+    try:
+        response = requests.get(url)
+        with open(output_path, 'wb') as file:
+            file.write(response.content)
+        return output_path
+    except Exception as e:
+        st.error(f"Error downloading the model: {e}")
+        return None
+
+# Google Drive link for the model
+model_url = "https://drive.google.com/uc?export=download&id=1cFh_gt5lsDoZWSAwRuxMeLMRkTtht3xk"
+model_path = "DPP4_model.pkl"
+
+# Download the model if not already downloaded
+if not os.path.exists(model_path):
+    st.info("Downloading the model...")
+    downloaded_model_path = download_model_from_gdrive(model_url, model_path)
+else:
+    downloaded_model_path = model_path
 
 # Load the trained model
-model_path = 'E:\\Projects\\CADD\\DDP-4\\DPP4_model.pkl'
-with open(model_path, 'rb') as file:
-    model = pickle.load(file)
+if downloaded_model_path and os.path.exists(downloaded_model_path):
+    with open(downloaded_model_path, 'rb') as file:
+        model = pickle.load(file)
+else:
+    st.error("Failed to load the model. Please check the download link or local file.")
 
 # Function to generate PubChem-like fingerprints
 def get_fingerprint(smiles):
@@ -49,8 +75,7 @@ st.markdown(
     """
     <div class="intro-text">
         DPP-4 inhibitors are a class of oral medications used to manage type 2 diabetes.
-  This model predicts the potency (pIC50) of molecules against the DPP-4 enzyme, aiding in the discovery and development of novel drugs for type 2 diabetes.
-
+        This model predicts the potency (pIC50) of molecules against the DPP-4 enzyme, aiding in the discovery and development of novel drugs for type 2 diabetes.
     </div>
     """,
     unsafe_allow_html=True
@@ -69,8 +94,11 @@ if st.button("Predict"):
             fingerprint_df.columns = fingerprint_df.columns.astype(str)
 
             # Prediction
-            prediction = model.predict(fingerprint_df)[0]
-            st.write(f"Predicted pIC50: {prediction:.2f}")
+            try:
+                prediction = model.predict(fingerprint_df)[0]
+                st.write(f"Predicted pIC50: {prediction:.2f}")
+            except Exception as e:
+                st.error(f"Error during prediction: {e}")
         else:
             st.error("Invalid SMILES string. Please enter a valid SMILES.")
     else:
