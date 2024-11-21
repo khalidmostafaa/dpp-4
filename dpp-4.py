@@ -9,8 +9,9 @@ import os
 
 # Function to download the model from Google Drive
 def download_model_from_gdrive(url, output_path):
-    try:
+   try:
         response = requests.get(url)
+        response.raise_for_status()  # Raise an error for bad responses
         with open(output_path, 'wb') as file:
             file.write(response.content)
         return output_path
@@ -18,23 +19,28 @@ def download_model_from_gdrive(url, output_path):
         st.error(f"Error downloading the model: {e}")
         return None
 
-# Google Drive link for the model
+# Define model URL and local path
 model_url = "https://drive.google.com/uc?export=download&id=1cFh_gt5lsDoZWSAwRuxMeLMRkTtht3xk"
 model_path = "DPP4_model.pkl"
 
-# Download the model if not already downloaded
+# Download the model
 if not os.path.exists(model_path):
     st.info("Downloading the model...")
     downloaded_model_path = download_model_from_gdrive(model_url, model_path)
 else:
     downloaded_model_path = model_path
 
-# Load the trained model
+# Verify and load the model
 if downloaded_model_path and os.path.exists(downloaded_model_path):
-    with open(downloaded_model_path, 'rb') as file:
-        model = pickle.load(file)
+    try:
+        with open(downloaded_model_path, 'rb') as file:
+            model = pickle.load(file)
+    except pickle.UnpicklingError:
+        st.error("The downloaded file is not a valid pickle file. Please check the Google Drive link.")
+    except Exception as e:
+        st.error(f"An error occurred while loading the model: {e}")
 else:
-    st.error("Failed to load the model. Please check the download link or local file.")
+    st.error("Failed to load the model. File may be missing or corrupted.")
 
 # Function to generate PubChem-like fingerprints
 def get_fingerprint(smiles):
