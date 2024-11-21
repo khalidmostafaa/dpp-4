@@ -20,7 +20,7 @@ def download_model_from_gdrive(url, output_path):
         return None
 
 # Define model URL and local path
-model_url = "https://drive.google.com/uc?export=download&id=1cFh_gt5lsDoZWSAwRuxMeLMRkTtht3xk"
+model_url = "https://drive.google.com/file/d/1cFh_gt5lsDoZWSAwRuxMeLMRkTtht3xk/view?usp=drive_link"
 model_path = "DPP4_model.pkl"
 
 # Download the model
